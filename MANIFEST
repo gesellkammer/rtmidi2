@@ -1,0 +1,8 @@
+MANIFEST
+tests.py
+README.rst
+rtmidi2.pyx
+setup.py
+RtMidi/RtMidi.h
+RtMidi/RtMidi.cpp
+version.cfg
