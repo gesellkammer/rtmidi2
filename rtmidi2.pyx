@@ -65,23 +65,23 @@ API_RTMIDI_DUMMY = RTMIDI_DUMMY
 cdef extern from "RtMidi/RtMidi.h":
     ctypedef void (*RtMidiCallback)(double timeStamp, vector[unsigned char]* message, void* userData)
     cdef cppclass RtMidi:
-        void openPort(unsigned int portNumber)
-        void openVirtualPort(string portName)
+        void openPort(unsigned int portNumber) except+
+        void openVirtualPort(string portName) except+
         unsigned int getPortCount()
-        string getPortName(unsigned int portNumber)
-        void closePort()
+        string getPortName(unsigned int portNumber) except+
+        void closePort() except+
 
     cdef cppclass RtMidiIn(RtMidi):
-        RtMidiIn(RtMidi.Api api, string clientName, unsigned int queueSizeLimit)
-        void setCallback(RtMidiCallback callback, void* userData)
-        void cancelCallback()
+        RtMidiIn(RtMidi.Api api, string clientName, unsigned int queueSizeLimit) except+
+        void setCallback(RtMidiCallback callback, void* userData) except+
+        void cancelCallback() except+
         void ignoreTypes(bint midiSysex, bint midiTime, bint midiSense)
-        double getMessage(vector[unsigned char]* message)
+        double getMessage(vector[unsigned char]* message) except+
 
     cdef cppclass RtMidiOut(RtMidi):
-        RtMidiOut(RtMidi.Api api, string clientName)
+        RtMidiOut(RtMidi.Api api, string clientName) except+
         # RtMidiOut()
-        void sendMessage(vector[unsigned char]* message)
+        void sendMessage(vector[unsigned char]* message) except+
         Api getCurrentApi()
 
 cdef class MidiBase:
