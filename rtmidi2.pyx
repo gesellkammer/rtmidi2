@@ -2,6 +2,8 @@
 #cython: embedsignature=True
 #cython: checknone=False
 
+def version():
+    return (0, 8, 1)
 
 ### cython imports
 from libcpp.string cimport string
@@ -977,5 +979,3 @@ cpdef MidiIn _get_midiin():
     #     _midiin = MidiIn()
     # return _midiin
 
-def version():
-    return (0, 7, 0)
