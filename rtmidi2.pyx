@@ -1,6 +1,7 @@
-#cython: boundscheck=False
-#cython: embedsignature=True
-#cython: checknone=False
+# cython: boundscheck=False
+# cython: embedsignature=True
+# cython: checknone=False
+# cython: language_level=3
 
 def version():
     return (0, 8, 1)
@@ -27,6 +28,7 @@ DEF DCC         = 176
 DEF DNOTEOFF    = 128
 DEF DPROGCHANGE = 192
 DEF DPITCHWHEEL = 224
+DEF QUEUESIZE   = 1024
 
 NOTEON     = DNOTEON
 CC         = DCC
@@ -194,7 +196,7 @@ cdef class MidiIn(MidiBase):
     cdef object py_callback
     cdef readonly double deltatime
 
-    def __cinit__(self, clientname=None, unsigned int queuesize=1024, Api api=UNSPECIFIED):
+    def __cinit__(self, clientname=None, unsigned int queuesize=QUEUESIZE, Api api=UNSPECIFIED):
         if clientname is None:
             self.thisptr = new RtMidiIn(api, string(<char*>"RTMIDI"), queuesize)
         else:
@@ -203,7 +205,7 @@ cdef class MidiIn(MidiBase):
         self.py_callback = None
         self._openedports = []
 
-    def __init__(self, clientname=None, queuesize=1024, api=API_UNSPECIFIED):
+    def __init__(self, clientname=None, queuesize=QUEUESIZE, api=API_UNSPECIFIED):
         """
         clientname (optional): the name of the client (bytes string, no unicode)
         queuesize: the size of the queue in bytes.
@@ -250,6 +252,7 @@ cdef class MidiIn(MidiBase):
     property callback:
         def __get__(self):
             return self.py_callback
+
         def __set__(self, callback):
             if callback is None:
                 self._cancel_callback()
@@ -311,22 +314,24 @@ cdef class MidiInMulti:
     # cdef RtMidiIn* inspector
     cdef vector[RtMidiIn *]* ptrs
     cdef int queuesize
+    cdef Api api
     cdef readonly object clientname
     cdef object py_callback
     cdef list qualified_callbacks
     cdef readonly list _openedports
     cdef dict hascallback
-
+    
     property inspector:
         def __get__(self):
             return MidiIn("INSPECTOR")
 
-    def __cinit__(self, clientname=None, queuesize=100):
+    def __cinit__(self, clientname=None, queuesize=QUEUESIZE, Api api=UNSPECIFIED):
         self.ptrs = new vector[RtMidiIn *]()
         self.py_callback = None
         self.qualified_callbacks = []
+        self.api = api
 
-    def __init__(self, clientname=None, queuesize=100):
+    def __init__(self, clientname=None, queuesize=QUEUESIZE, Api api=UNSPECIFIED):
         """
         This class implements the capability to listen to multiple inputs at once
         A callback needs to be defined, as in MidiIn, which will be called if any
@@ -398,7 +403,6 @@ cdef class MidiInMulti:
         """
         return self.inspector.get_port_name(portindex, encoding)
 
-
     def get_callback(self):
         return self.py_callback
 
@@ -441,7 +445,7 @@ cdef class MidiInMulti:
             raise ValueError("Port out of range")
         if port in self._openedports:
             raise ValueError("Port already open!")
-        cdef RtMidiIn* newport = new RtMidiIn(UNSPECIFIED, string(<char*>self.clientname), self.queuesize)
+        cdef RtMidiIn* newport = new RtMidiIn(self.api, string(<char*>self.clientname), self.queuesize)
         newport.openPort(port)
         self.ptrs.push_back(newport)
         self._openedports.append(port)
@@ -687,11 +691,14 @@ def _callback_mididump_parsable(str src, list msg, t):
     vals = ", ".join(("%03d" % val for val in msg[1:]))
     print("%s, %f, %s, %02d, " % (src, t, msgtstr, ch) + vals)
 
-def mididump(port_pattern="*", parsable=False):
+def mididump(port_pattern="*", parsable=False, api=API_UNSPECIFIED):
     """
-    listen to all ports matching pattern and print the received messages
+    Listen to all ports matching pattern and print the received messages
+
     parsable: if True, it will return the data in comma delimited format
               source, timedelta, msgtype, channel, byte2, byte3[, ...]
+    api: which api to use. In some platforms there is only one option
+         (macOS, windows). 
     """
     m = MidiInMulti().open_ports(port_pattern)
     if not parsable:
@@ -714,24 +721,13 @@ ctypedef vector[unsigned char] uchr_vec
 cdef class MidiOut(MidiBase):
     cdef RtMidiOut* thisptr
     cdef bint virtual_port_opened
-    cdef vector[unsigned char]* msg3
-    cdef int msg3_locked
-
-    property _locked:
-        def __get__(self): return self.msg3_locked
-        def __set__(self, value):
-            self.msg3_locked = int(value)
-
+    
     def __cinit__(self, clientname=None, Api api=UNSPECIFIED):
         if clientname is None:
             self.thisptr = new RtMidiOut(api, string(<char*>"RTMIDI"))
         else:
             clientname = clientname.encode("ASCII", errors="ignore")
             self.thisptr = new RtMidiOut(api, string(<char*>clientname))
-        self.msg3 = new vector[unsigned char]()
-        for n in range(3):
-            self.msg3.push_back(0)
-        self.msg3_locked = 0
         self.virtual_port_opened = False
         self._openedports = []
 
@@ -740,8 +736,7 @@ cdef class MidiOut(MidiBase):
     def __dealloc__(self):
         self.close_port()
         del self.thisptr
-        del self.msg3
-
+       
     cdef RtMidi* baseptr(self):
         return self.thisptr
 
@@ -755,15 +750,15 @@ cdef class MidiOut(MidiBase):
 
     def send_raw(self, *bytes):
         cdef int lenbytes = len(bytes)
-        cdef vector[unsigned char]* v = new vector[unsigned char](lenbytes)
+        cdef vector[unsigned char]v 
+        v = uchr_vec(lenbytes)
         cdef unsigned char b
         cdef int i = 0
         for b in bytes:
-            v[0][i] = b
+            v[i] = b
             i += 1
-        self.thisptr.sendMessage(v)
-        del v
-
+        self.thisptr.sendMessage(&v)
+        
     def send_sysex(self, *bytes):
         """
         bytes: the content of the sysex message. A sysex message consists
@@ -804,32 +799,6 @@ cdef class MidiOut(MidiBase):
         b2 = transp >> 7
         self._send_raw3(DPITCHWHEEL+channel, b1, b2)
 
-    #cdef inline void _send_raw3_(self, unsigned char b0, unsigned char b1, unsigned char b2):
-    #    cdef vector[unsigned char]* v
-    #    if self.msg3_locked:
-    #        v = new vector[unsigned char](3)
-    #        v[0][0] = b0
-    #        v[0][1] = b1
-    #        v[0][2] = b2
-    #        self.thisptr.sendMessage(v)
-    #        del v
-    #    else:
-    #        self.msg3_locked = 1
-    #        v = self.msg3
-    #        v[0][0] = b0
-    #        v[0][1] = b1
-    #        v[0][2] = b2
-    #        self.thisptr.sendMessage(v)
-    #        self.msg3_locked = 0
-
-    cdef inline void _send_raw3__(self, unsigned char b0, unsigned char b1, unsigned char b2):
-        cdef vector[unsigned char]* v = new vector[unsigned char](3)
-        v[0][0] = b0
-        v[0][1] = b1
-        v[0][2] = b2
-        self.thisptr.sendMessage(v)
-        del v
-
     cdef inline void _send_raw3(self, unsigned char b0, unsigned char b1, unsigned char b2):
         cdef uchr_vec msg_v
         msg_v = uchr_vec(3)
@@ -866,19 +835,18 @@ cdef class MidiOut(MidiBase):
         messages = [(0, i, 0) for i in range(127)]
         m.send_messages(144, messages)
         """
-        cdef vector[unsigned char]* m = new vector[unsigned char]()
+        cdef uchr_vec m
+        m = uchr_vec(3)
         m.push_back(0)
         m.push_back(0)
         m.push_back(0)
         cdef tuple tuprow
         if isinstance(messages, list):
             for tuprow in <list>messages:
-                m[0][0], m[0][1], m[0][2] = tuprow
-                self.thisptr.sendMessage(m)
+                m = tuprow
+                self.thisptr.sendMessage(&m)
         else:
-            del m
-            raise TypeError("messages should be a list of tuples. other containers (numpy arrays) are still not supported")
-        del m
+            raise TypeError("messages should be a list of tuples. other containers are not supported")
         return None
 
     cpdef send_noteon(self, unsigned char channel, unsigned char midinote, unsigned char velocity):
