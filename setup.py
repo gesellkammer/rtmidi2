@@ -1,9 +1,7 @@
-from __future__ import print_function
-import distutils
 import sys
-from Cython.Distutils import build_ext
+from setuptools import setup, Extension
 
-version = "0.8.1"  # when changing version, this should reflect what is returned by version()
+version = "0.8.2"  # when changing version, this should reflect what is returned by version()
 
 module_source = 'rtmidi2.pyx'
 
@@ -37,22 +35,20 @@ if sys.platform == 'win32':
         libraries=['winmm']
     )
 
-rtmidi_module = distutils.extension.Extension(
-    'rtmidi2',
-    [module_source, 'RtMidi/RtMidi.cpp'],
-    language='c++',
-    **extension_args
-)
-
-distutils.core.setup(
+setup(
     name='rtmidi2',
+    python_requires='>=3.6',
     version=version,
-    description='Python wrapper for RtMidi written in Cython. Allows sending raw messages, multi-port input and sending multiple messages in one call.',
-    author='originally by Guido Lorenz, modified by Eduardo Moguillansky',
-    author_email='eduardo.moguillansky@gmail.com',
-    url="https://github.com/gesellkammer/rtmidi2",
-    cmdclass={'build_ext': build_ext},
-    ext_modules=[rtmidi_module],
+    ext_modules=[
+        Extension(
+            'rtmidi2',
+            sources = ['rtmidi2.pyx', 'RtMidi/RtMidi.cpp'],
+            depends = ['RtMidi/RtMidi.hpp'],
+            language='c++',
+            **extension_args
+        )
+    ],
+    setup_requires=['cython'],
     license='MIT',
     platforms='any',
     classifiers=[
@@ -64,5 +60,9 @@ distutils.core.setup(
         'Programming Language :: Python :: 3',
         'Programming Language :: Python :: 3.4',
         'Topic :: Software Development :: Libraries :: Python Modules'
-    ]
+    ],
+    description='Python wrapper for RtMidi written in Cython. Allows sending raw messages, multi-port input and sending multiple messages in one call.',
+    author='originally by Guido Lorenz, modified by Eduardo Moguillansky',
+    author_email='eduardo.moguillansky@gmail.com',
+    url="https://github.com/gesellkammer/rtmidi2",        
 )
