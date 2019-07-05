@@ -1,0 +1,25 @@
+#!/bin/bash
+# we need following tools: auditwheel, twine
+
+if [[ "$1" == "--help" ]]; then
+    echo
+    echo "publish-linux [--test]"
+    echo
+    exit 0
+fi
+
+rm -fr dist
+rm -fr wheelhouse
+
+python setup.py sdist bdist_wheel
+auditwheel repair dist/*.whl
+
+
+if [[ "$1" == "test" ]]; then
+    twine upload --repository pypitest --verbose dist/*.tar.gz
+    twine upload --repository pypitest --verbose wheelhouse/*.whl
+else
+    twine upload dist/*.tar.gz
+    twine upload wheelhouse/*.whl
+fi
+

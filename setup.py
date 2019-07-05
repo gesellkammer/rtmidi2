@@ -1,7 +1,7 @@
 import sys
 from setuptools import setup, Extension
 
-version = "0.8.2"  # when changing version, this should reflect what is returned by version()
+version = "0.8.3"  # when changing version, this should reflect what is returned by version()
 
 module_source = 'rtmidi2.pyx'
 
@@ -43,6 +43,7 @@ setup(
         Extension(
             'rtmidi2',
             sources = ['rtmidi2.pyx', 'RtMidi/RtMidi.cpp'],
+            include_dirs = ["RtMidi"],
             depends = ['RtMidi/RtMidi.hpp'],
             language='c++',
             **extension_args

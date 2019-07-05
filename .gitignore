@@ -2,3 +2,4 @@ rtmidi2.cpp
 *.so
 build/
 dist/
+*egg*
