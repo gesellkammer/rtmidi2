@@ -4,7 +4,7 @@
 # cython: language_level=3
 
 def version():
-    return (0, 8, 3)
+    return (0, 8, 4)
 
 ### cython imports
 from libcpp.string cimport string
