@@ -29,7 +29,7 @@ jobs:
           path: ./wheelhouse/*.whl
       - name: Upload wheels
         env:
-            TWINE_USERNAME: __token__
+            TWINE_USERNAME: Eduardo.Moguillansky
             TWINE_PASSWORD: ${{ secrets.pypipass }}
         run: |
             echo $TWINE_USERNAME
