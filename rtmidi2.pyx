@@ -1,10 +1,17 @@
+# cython: binding=True
 # cython: boundscheck=False
 # cython: embedsignature=True
 # cython: checknone=False
 # cython: language_level=3
 
 def version():
-    return (0, 8, 4)
+    """
+    Returns the version
+
+    Returns:
+        (tuple[int, int, int]) The version as (major, minor, patch)
+    """
+    return (0, 9, 0)
 
 ### cython imports
 from libcpp.string cimport string
@@ -87,6 +94,13 @@ cdef extern from "RtMidi/RtMidi.h":
         Api getCurrentApi()
 
 cdef class MidiBase:
+    """
+    Base class for both MidiIn and MidiOut
+
+    Methods defined here are inherited and available for both midi input 
+    and output
+
+    """
     cdef readonly list _openedports
     # Private
     cdef RtMidi* baseptr(self):
@@ -95,20 +109,26 @@ cdef class MidiBase:
     # Public
     def open_port(self, port=0):
         """
-        port: an integer or a string
+        Open a port by index or name
 
-        * The string can contain a glob pattern, in which case it will be
-        matched against the existing ports and the first match will be used
-        * An integer is the index to the list of available ports
+        Args:
+            port: The port to open (an integer or a string)
 
-        Returns: self
+        !!! note
+
+            The string can contain a glob pattern, in which case it will be
+            matched against the existing ports and the first match will be used.
+            An integer is the index to the list of available ports
 
         Example
         =======
 
+        ```python
+        
         from rtmidi2 import MidiIn
-
         m = MidiIn().open_port("BCF*")
+        ```
+
         """
         if isinstance(port, int):
             if port > len(self.ports) - 1:
@@ -128,14 +148,18 @@ cdef class MidiBase:
         if self._openedports is None:
             self._openedports = []
         self._openedports.append(port_number)
-        return self
-
+       
     def get_port_name(self, unsigned int port, encoding='utf-8'):
-        """Return name of given port number.
+        """
+        Return name of given port number.
 
-        The port name is decoded to unicode with the encoding given by
-        ``encoding`` (defaults to ``'utf-8'``). If ``encoding`` is ``None``,
-        return string un-decoded.
+        Args:
+            port: the port index
+            encoding: the encoding used to decode the name
+
+        Returns:
+            (str | None) The name of the port, or None if the port was not found
+        
         """
         cdef string name = self.baseptr().getPortName(port)
         if len(name):
@@ -149,30 +173,63 @@ cdef class MidiBase:
         else:
             return None
 
-    property ports:
-        def __get__(self):
-            return [self.get_port_name(index) for index in range(self.baseptr().getPortCount())]
+    @property 
+    def ports(self):
+        """
+        Returns a list with the names of the available ports
+        """
+        return [self.get_port_name(index) for index in range(self.baseptr().getPortCount())]
 
-    def open_virtual_port(self, port_name):
-        if not isinstance(port_name, bytes):
-            port_name = port_name.encode("ASCII", errors="ignore")
+    def open_virtual_port(self, str port_name):
+        """
+        Open a virtual port
+
+        Args:
+            port_name: the name of the virtual port
+
+        Example
+        =======
+
+        ```python
+
+        from rtmidi2 import *
+        midiin = MidiIn("myapp")
+        midiin.open_virtual_port("myport")
+        ```
+
+        """
         self._openedports.append(port_name)
-        self.baseptr().openVirtualPort(string(<char*>port_name))
-        return self
-
+        cdef bytes bport = port_name.encode('ASCII', errors='ignore')
+        self.baseptr().openVirtualPort(string(<char*>bport))
+        
     def close_port(self):
+        """
+        Close an open port
+        """
         self.baseptr().closePort()
 
     def ports_matching(self, str pattern):
         """
-        return the indexes of the ports which match the glob pattern
+        Return the indexes of the ports which match the glob pattern
+
+        Args:
+            pattern: a glob pattern to match ports
+
+        Returns:
+            a list of port indexes which match the given pattern
+
 
         Example
         -------
 
-        # get all ports
-        midiin.ports_matching("*")
+        ```python
 
+        # get all ports
+        from rtmidi2 import *
+        midiin = MidiIn()
+        allports = midiin.ports_matching("*")
+        
+        ```
         """
         assert pattern is not None
         ports = self.ports
@@ -192,6 +249,47 @@ cdef void midi_in_callback_with_src(double time_stamp, vector[unsigned char]* me
 
 
 cdef class MidiIn(MidiBase):
+    """
+    Create a MidiIn object
+    
+    Args:
+        clientname (str): an optional name for the client
+        queuesize (int): the size of the queue in bytes.
+        api: the api used (API_xxx)
+
+    Example
+    -------
+
+    ```python
+    from rtmidi2 import MidiIn, NOTEON, CC, splitchannel
+    m_in = MidiIn()
+    m_in.open_port()    # will get messages from the default port
+
+    def callback(msg, timestamp):
+        msgtype, channel = splitchannel(msg[0])
+        if msgtype == NOTEON:
+            note, velocity = msg[1], msg[2]
+            print "noteon", note, velocity
+        elif msgtype == CC:
+            cc, value = msg[1:]
+            print "control change", cc, value
+
+    m_in.callback = callback
+
+    # You can cancel the receiving of messages by setting the callback to None
+    m_in.callback = None
+
+    # When you are done, close the port
+    m_in.close_port()
+    ```
+
+    !!! note 
+
+        If you want to listen from multiple ports, use `MidiInMulti`
+
+    For blocking interface, use `midiin.get_message()`
+    """
+    
     cdef RtMidiIn* thisptr
     cdef object py_callback
     cdef readonly double deltatime
@@ -200,47 +298,11 @@ cdef class MidiIn(MidiBase):
         if clientname is None:
             self.thisptr = new RtMidiIn(api, string(<char*>"RTMIDI"), queuesize)
         else:
-            clientname = clientname.encode("ASCII", errors="ignore")
-            self.thisptr = new RtMidiIn(api, string(<char*>clientname), queuesize)
+            assert isinstance(clientname, str)
+            bclientname = clientname.encode("ASCII", errors="ignore")
+            self.thisptr = new RtMidiIn(api, string(<char*>bclientname), queuesize)
         self.py_callback = None
         self._openedports = []
-
-    def __init__(self, clientname=None, queuesize=QUEUESIZE, api=API_UNSPECIFIED):
-        """
-        clientname (optional): the name of the client (bytes string, no unicode)
-        queuesize: the size of the queue in bytes.
-        api: the api used (API_xxx)
-
-        Example
-        -------
-
-        from rtmidi2 import MidiIn, NOTEON, CC, splitchannel
-        m_in = MidiIn()
-        m_in.open_port()    # will get messages from the default port
-
-        def callback(msg, timestamp):
-            msgtype, channel = splitchannel(msg[0])
-            if msgtype == NOTEON:
-                note, velocity = msg[1], msg[2]
-                print "noteon", note, velocity
-            elif msgtype == CC:
-                cc, value = msg[1:]
-                print "control change", cc, value
-
-        m_in.callback = callback
-
-        # You can cancel the receiving of messages by setting the callback to None
-        m_in.callback = None
-
-        # When you are done, close the port
-        m_in.close_port()
-
-        NB: If you want to listen from multiple ports, use MidiInMulti
-
-        For blocking interface, use midiin.get_message()
-        """
-        # this declaration is here so that the docstring gets generated
-        pass
 
     def __dealloc__(self):
         self.py_callback = None
@@ -251,6 +313,7 @@ cdef class MidiIn(MidiBase):
 
     property callback:
         def __get__(self):
+            """The python function called when a message is received"""
             return self.py_callback
 
         def __set__(self, callback):
@@ -274,30 +337,45 @@ cdef class MidiIn(MidiBase):
 
     def ignore_types(self, midi_sysex=True, midi_time=True, midi_sense=True):
         """
-        Don't react to these messages. This avoids having to make your callback
-        aware of these and avoids congestion where your device acts as a midiclock
-        but your not interested in that.
+        Don't react to these messages. 
+
+        This avoids having to make your callback aware of these and avoids congestion 
+        where your device acts as a midiclock but your not interested in that.
+
+        Args:
+            midi_sysex: if True, sysex messages are ignored
+            midi_time: if True, midi time messages are ignored
+            midi_sense: if True, midi sense messages are ignored
         """
         self.thisptr.ignoreTypes(midi_sysex, midi_time, midi_sense)
 
     def get_message(self):
         """
-        Blocking interface. For non-blocking interface, use the callback method (midiin.callback = ...)
+        Get a midi message (blocking)
+
+        For non-blocking interface, use the callback method (midiin.callback = ...)
 
         A message can be:
-            a 3 byte message (cc, noteon, pitchbend): [(messagetype | channel), value1, value2]
-            a 2 byte message (progchange, chanpress): [(messagetype | channel), value1]
-            a 1 byte message (start, stop, clock)
-            a sysex message, with variable number of bytes
+        
+        * a 3 byte message (cc, noteon, pitchbend): `[(messagetype | channel), value1, value2]`
+        * a 2 byte message (progchange, chanpress): `[(messagetype | channel), value1]`
+        * a 1 byte message (start, stop, clock)
+        * a sysex message, with variable number of bytes
 
         To isolate messagetype and channel, do this:
 
+        ```python
+        
         messagetype = message[0] & 0xF0
         channel     = message[0] & 0x0F
 
-        or use the utility function splitchannel:
+        ```
 
+        Or use the utility function splitchannel:
+
+        ```python
         msgtype, channel = splitchannel(message[0])
+        ```
         """
         cdef vector[unsigned char]* message_vector = new vector[unsigned char]()
         cdef double deltatime = self.thisptr.getMessage(message_vector)
@@ -311,7 +389,54 @@ cdef class MidiIn(MidiBase):
 
 
 cdef class MidiInMulti:
-    # cdef RtMidiIn* inspector
+    """
+    This class implements the capability to listen to multiple inputs at once
+    A callback needs to be defined, as in MidiIn, which will be called if any
+    of the devices receives any input.
+
+    Args:
+        clientname (str): an optional client name
+        queuesize: the size of the queue in bytes
+        api: the api used
+
+    Your callback can be of two forms:
+
+    ```python
+
+    def callback(msg, time):
+        msgtype, channel = splitchannel(msg[0])
+        print msgtype, msg[1], msg[2]
+
+    def callback_with_source(src, msg, time):
+        print "message generated from midi-device: ", src
+        msgtype, channel = splitchannel(msg[0])
+        print msgtype, msg[1], msg[2]
+
+    midiin = MidiInMulti().open_ports("*")
+    # your callback will be called according to its signature
+    midiin.callback = callback_with_source   
+    ```
+    
+    If you need to know the port number of the device initiating the message 
+    instead of the device name, use:
+
+    ``` pyton
+    midiin.set_callback(callback_with_source, src_as_string=False)
+    ```
+
+    Example
+    -------
+
+    ```python
+
+    multi = MidiInMulti().open_ports("*")
+    def callback(msg, timestamp):
+        print(msg)
+    multi.callback = callback
+    
+    ```
+    """
+    
     cdef vector[RtMidiIn *]* ptrs
     cdef int queuesize
     cdef Api api
@@ -332,38 +457,6 @@ cdef class MidiInMulti:
         self.api = api
 
     def __init__(self, clientname=None, queuesize=QUEUESIZE, Api api=UNSPECIFIED):
-        """
-        This class implements the capability to listen to multiple inputs at once
-        A callback needs to be defined, as in MidiIn, which will be called if any
-        of the devices receives any input.
-
-        Your callback can be of two forms:
-
-        def callback(msg, time):
-            msgtype, channel = splitchannel(msg[0])
-            print msgtype, msg[1], msg[2]
-
-        def callback_with_source(src, msg, time):
-            print "message generated from midi-device: ", src
-            msgtype, channel = splitchannel(msg[0])
-            print msgtype, msg[1], msg[2]
-
-        midiin = MidiInMulti().open_ports("*")
-        midiin.callback = callback_with_source   # your callback will be called according to its signature
-
-        If you need to know the port number of the device initiating the message instead of the device name,
-        use:
-
-        midiin.set_callback(callback_with_source, src_as_string=False)
-
-        Example
-        -------
-
-        multi = MidiInMulti().open_ports("*")
-        def callback(msg, timestamp):
-            print msg
-        multi.callback = callback
-        """
         self.queuesize = queuesize
         self._openedports = []
         self.hascallback = {}
@@ -388,14 +481,31 @@ cdef class MidiInMulti:
         """
         Returns a list of the open ports, by index
         To get the name, use .get_port_name
+
+        Returns:
+            a list with the indexes of the open ports
         """
         return self._openedports
 
     def get_open_ports_byname(self):
+        """
+        Similar to `get_open_ports`, returns a list of the open ports by name
+
+        Returns:
+            a list with the names of the open ports
+        """
         return [self.get_port_name(idx) for idx in self.get_open_ports()]
 
     def get_port_name(self, int portindex, encoding="utf-8"):
-        """Return name of given port number.
+        """
+        Return name of given port number.
+
+        Args:
+            portindex: the index of the port
+            encoding: the encoding used to convert the name to a str
+
+        Returns:
+            (str) The port name 
 
         The port name is decoded to unicode with the encoding given by
         ``encoding`` (defaults to ``'utf-8'``). If ``encoding`` is ``None``,
@@ -408,16 +518,22 @@ cdef class MidiInMulti:
 
     def ports_matching(self, pattern, exclude=None):
         """
-        return the indexes of the ports which match the glob pattern
+        Return the indexes of the ports which match the glob pattern
+
+        Args:
+            pattern: an exact name or a glob patter (str)
+            exclude: a glob pattern to exclude
 
         Example
         -------
 
+        ```python
         # get all ports
         midiin.ports_matching("*")
 
         # open the IAC port in OSX without having to remember the whole name
         midiin.open_port(midiin.ports_matching("IAC*"))
+        ```
         """
         ports = self.ports
         if exclude is None:
@@ -433,11 +549,14 @@ cdef class MidiInMulti:
         Example
         =======
 
+        ```python
         midiin.open_port(0)  # open the default port
 
         # open all ports
         for i in len(midiin.ports):
             midiin.open_port(i)
+
+        ```
 
         SEE ALSO: open_ports
         """
@@ -454,18 +573,25 @@ cdef class MidiInMulti:
             callback = self.py_callback
             self._cancel_callbacks()
             self.callback = callback
-        return self
-
+        
     def open_ports(self, *patterns, exclude=None):
         """
         You can specify multiple patterns. Of course a pattern can also
         be an exact match
 
+        Args:
+            patterns: all ports matching any of the patterns will be opened
+            exclude: an optional exclude pattern
+
+        ```pyton
         # dont care to specify the full name of the Korg device
         midiin.open_ports("BCF2000", "Korg*")
+        ```
 
         Example
         -------
+
+        ```python
 
         # Transpose all notes received one octave up,
         # send them to a virtual port named "OUT"
@@ -478,12 +604,12 @@ cdef class MidiInMulti:
             elif msgtype == NOTEOFF:
                 midiout.send_noteoff(ch, msg[1] + 12, msg[2])
         midiin.callback = callback
+        ```
         """
         for pattern in patterns:
             for port in self.ports_matching(pattern, exclude):
                 self.open_port(port)
-        return self
-
+        
     cpdef int close_ports(self):
         """closes all ports and deactivates any callback."""
         cdef RtMidiIn* ptr
@@ -547,36 +673,32 @@ cdef class MidiInMulti:
 
     def set_callback(self, callback, src_as_string=True):
         """
-        This is the same as
+        This is the same as `midiin.callback = mycallback`, but lets you specify how callback is called
 
-        midiin.callback = mycallback
-
-        But lets you specify how your callback is called
-
-        callback (function) : your callback. A function of the form
-                              func(msg, time) or func(src, msg, time)
-                              where:
-                                  * msg: a tuple of bytes, normally three
-                                  * time: the timestamp of the received msg
-                                  * src: an int or a str identifying the src from
-                                         which the msg was received (see src_as_string)
-        src_as_string (bool): This only applies for the case where your
-                              callback is func(src, msg, time)
-                              In this case, if src_as_string is True,
-                              the source is the string representing the source
-                              Otherwise, it is the port number.
+        Args:
+            callback (function) : your callback. A function of the form
+                `func(msg, time)` or `func(src, msg, time)`, where **msg** is a
+                a tuple of bytes, normally three, **time** is the timestamp of the 
+                received msg and **src** is an int or a str identifying the src from
+                which the msg was received (see src_as_string)
+            src_as_string (bool): This only applies for the case where your 
+                callback is `func(src, msg, time)`. In this case, if src_as_string is True,
+                the source is the string representing the source. Otherwise, it is the port number.
 
         Example
         =======
 
+        ```python
         def callback_with_source(src, msg, time):
             print "message generated from midi-device: ", src
             msgtype, channel = splitchannel(msg[0])
             print(msgtype, msg[1], msg[2])
-
-        midiin = MidiInMulti().open_ports("*")
+    
+        midiin = MidiInMulti()
+        midiin.open_ports("*")
         # your callback will be called according to its signature
         midiin.set_callback(callback_with_source)
+        ```
         """
         numargs = _func_get_numargs(callback)
         if numargs == 2:
@@ -585,8 +707,7 @@ cdef class MidiInMulti:
             self._set_qualified_callback(callback, src_as_string)
         else:
             raise ValueError("callback must have either the signature f(msg, time) or f(src, msg, time)")
-        return self
-
+    
     def _set_qualified_callback(self, callback, src_as_string=True):
         """
         this callback will be called with src, msg, time
@@ -614,25 +735,34 @@ cdef class MidiInMulti:
                 self.hascallback[port] = True
 
     def get_message(self, int gettime=1):
-        raise NotImplemented("The blocking interface is not implemented for multiple inputs. Use the callback system")
+        raise NotImplemented("The blocking interface is not implemented for multiple "
+                             "inputs. Use the callback system")
 
 
 ##########################################
 #              UTILITIES
 ##########################################
 
-cpdef tuple splitchannel(int b):
+cpdef tuple splitchannel(int firstbyte):
     """
-    split the messagetype and the channel as returned by get_message
+    Split the messagetype and the channel as returned by get_message
 
+    Args:
+        firstbyte: the first byte of a MIDI message, which consists
+            of the msgtype and the channel ORed together 
+
+    Returns:
+        (tuple[int, int]) A tuple `(msgtype: int, channel: int)`, where the 
+        channel is a value 0-15
+
+    ```python
     msg = midiin.get_message()
     msgtype, channel = splitchannel(msg[0])
-
-    return b & 0xF0, b & 0x0F
-
-    SEE ALSO: msgtype2str
+    ```
+    
+    **See Also**: `msgtype2str`
     """
-    return b & 0xF0, b & 0x0F
+    return firstbyte & 0xF0, firstbyte & 0x0F
 
 def _func_get_numargs(func):
     try:
@@ -642,37 +772,95 @@ def _func_get_numargs(func):
     except TypeError:
         return None
 
-def msgtype2str(msgtype):
+def msgtype2str(int msgtype):
     """
-    convert the message-type as returned by splitchannel(msg[0])[0] to a readable string
+    Convert the message-type as returned by splitchannel(msg[0])[0] to a readable string
 
-    SEE ALSO: splitchannel
+    Args:
+        msgtype: the type of the message (an integer)
+
+    Returns:
+        (str) the name of the message
+    
+
+    Example
+    -------
+
+    ```python
+    >>> msg = midiin.get_message()
+    >>> msgtype, channel = splitchannel(msg[0])
+    >>> msgtype2str(msgtype)
+    NOTEON
+    ```
+
+    **See Also**: `splitchannel`
     """
     return MSGTYPES.get(msgtype, 'UNKNOWN')
+
 
 def midi2note(int midinote):
     """
     convert a midinote to the string representation of the note
 
+    Args:
+        midinote: the midinote to convert
+
+    Returns:
+        (str) the corresponding note name
+
     Example
     =======
 
+    ```python
     >>> midi2note(60)
-    "C4"
+    C4
+    ```
     """
     cdef int octave = int(midinote / 12) - 1
     cdef int pitchindex = midinote % 12
     return "%s%d" % (_notenames[pitchindex], octave)
 
-def _callback_mididump(src, msg, t):
+
+def callback_mididump(list msg, float t):
     """
-    use this function as your callback to dump all received messages
+    Use this function as your callback to dump all received messages 
+
+    Args:
+        msg (list[str]): this will hold the data
+        t: the time delta since last message
+
+    Example
+    -------
+
+    ```python
+
+    from rtmidi2 import *
+
+    client = MidiIn("myclient")
+    client.open_virtual_port("myport")
+    client.callback = callback_mididump
+    ```
     """
     msgt, ch = splitchannel(msg[0])
     msgtstr = msgtype2str(msgt)
     val1 = int(msg[1])
     val2 = int(msg[2])
-    srcstr = src.ljust(20)[:20]
+    if msgt == CC:
+        print("CC      ch:%02d  %03d -> %03d" % (ch, val1, val2))
+    elif msgt == NOTEON or msgt == NOTEOFF:
+        notename = midi2note(val1)
+        print("%s ch:%d %s (%03d) vel:%d" %
+              (msgtstr.ljust(7), ch, notename.ljust(3), val1, val2))
+    else:
+        print("%s ch:%d %03d, %03d" % (msgtstr, ch, val1, val2))
+
+
+def _callback_mididump_with_src(str src, list msg, float t):
+    msgt, ch = splitchannel(msg[0])
+    msgtstr = msgtype2str(msgt)
+    val1 = int(msg[1])
+    val2 = int(msg[2])
+    cdef str srcstr = src.ljust(20)[:20]
     if msgt == CC:
         print("%s | CC      ch:%02d  %03d -> %03d" % (srcstr, ch, val1, val2))
     elif msgt == NOTEON or msgt == NOTEOFF:
@@ -683,7 +871,7 @@ def _callback_mididump(src, msg, t):
         print("%s | %s ch:%d %03d, %03d" % (srcstr, msgtstr, ch, val1, val2))
 
 
-def _callback_mididump_parsable(str src, list msg, t):
+def _callback_mididump_with_src_parsable(str src, list msg, float t):
     msgt, ch = splitchannel(msg[0])
     msgtstr = msgtype2str(msgt)
     val1 = int(msg[1])
@@ -691,28 +879,45 @@ def _callback_mididump_parsable(str src, list msg, t):
     vals = ", ".join(("%03d" % val for val in msg[1:]))
     print("%s, %f, %s, %02d, " % (src, t, msgtstr, ch) + vals)
 
+
 def mididump(port_pattern="*", parsable=False, api=API_UNSPECIFIED):
     """
     Listen to all ports matching pattern and print the received messages
 
-    parsable: if True, it will return the data in comma delimited format
-              source, timedelta, msgtype, channel, byte2, byte3[, ...]
-    api: which api to use. In some platforms there is only one option
-         (macOS, windows). 
+    Args:
+        parsable: if True, it will return the data in comma delimited format
+            source, timedelta, msgtype, channel, byte2, byte3[, ...]
+        api: which api to use. In some platforms there is only one option
+             (macOS, windows). 
+    
+    Returns:
+        (MidiInMulti) The MidiInMulti created to listen to all midi inputs
     """
     m = MidiInMulti().open_ports(port_pattern)
     if not parsable:
-        m._set_qualified_callback(_callback_mididump, src_as_string=True)
+        m._set_qualified_callback(_callback_mididump_with_src, src_as_string=True)
     else:
-        m._set_qualified_callback(_callback_mididump_parsable, src_as_string=True)
+        m._set_qualified_callback(_callback_mididump_with_src_parsable, src_as_string=True)
     return m
 
+
 def get_in_ports():
-    """returns a list of available in ports"""
+    """
+    Returns a list of available in ports
+
+    Returns:
+        (list[str]) A list of available input ports, by name
+    """
     return _get_midiin().ports
 
+
 def get_out_ports():
-    """returns a list of available out ports"""
+    """
+    Returns a list of available out ports
+
+    Returns:
+        (list[str]) A list of availabe output ports, by name
+    """
     return MidiOut().ports
 
 ctypedef vector[unsigned char] uchr_vec
@@ -761,10 +966,13 @@ cdef class MidiOut(MidiBase):
         
     def send_sysex(self, *bytes):
         """
-        bytes: the content of the sysex message. A sysex message consists
-               of a starting byte 0xF0, the content of the sysex command,
-               and an end byte 0xF7.
-               The bytes need to be in the range 0-127
+        Send a sysex message 
+
+        Args:
+            bytes: the content of the sysex message. 
+
+        A sysex message consists of a starting byte 0xF0, the content of the sysex command,
+        and an end byte 0xF7. The bytes need to be in the range 0-127
         """
         cdef int lenbytes = len(bytes)
         cdef vector[unsigned char]* v = new vector[unsigned char](lenbytes+2)
@@ -780,17 +988,21 @@ cdef class MidiOut(MidiBase):
 
     def send_pitchbend(self, unsigned char channel, unsigned int transp):
         """
-        channel: 0-15
-        pitch: 0 to 16383
+        Send a pitchbend message
 
-        no transposition (center): 8192
+        Args:
+            channel: 0-15
+            pitch: 0 to 16383
+
+        !!! note
+
+            The 0 point (no transposition) is 8192
 
         The MIDI standard specifies a default of 2 semitones UP and 2 semitones DOWN for
-        the pitch-wheel. So to convert cents to pitchbend (cents between -200 and 200),
+        the pitch-wheel. To convert cents to pitchbend (cents between -200 and 200), use
+        `cents2pitchbend`
 
-        SEE ALSO:
-            pitchbend2cents
-            cents2pitchbend
+        **See Also**: `pitchbend2cents`, `cents2pitchbend`
         """
         cdef unsigned char b1, b2
         if transp > 16383:
@@ -810,30 +1022,42 @@ cdef class MidiOut(MidiBase):
 
     cpdef send_cc(self, unsigned char channel, unsigned char cc, unsigned char value):
         """
-        channel -> 0-15
+        Send a CC message
+
+        Args:
+            channel: 0-15
+            cc: the CC index (0-127)
+            value: the CC value (0-127)
         """
         self._send_raw3(DCC | channel, cc, value)
 
     cpdef send_messages(self, int messagetype, messages):
         """
-        messagetype:
-            NOTEON     144
-            CC         176
-            NOTEOFF    128
-            PROGCHANGE 192
-            PITCHWHEEL 224
-        messages: a list of tuples of the form (channel, value1, value2), or a numpy 2D array with 3 columns and n rows
-        where channel is an int between 0-15, value1 is the midinote or ccnumber, etc, and value2 is the value of the message (velocity, control value, etc)
+        Args:
+            messagetype: an integer identifying the kind of message
+            messages: a list of tuples of the form `(channel, value1, value2)`
 
+
+        | Message type | Value |
+        | ------------ | ----- |
+        | NOTEON       | 144   |
+        | CC           | 176   |
+        | NOTEOFF      | 128   |
+        | PROGCHANGE   | 192   |
+        | PITCHWHEEL   | 224   |
+
+        
         Example
         -------
 
+        ```python
         # send multiple noteoffs as noteon with velocity 0 for hosts which do not implement the noteoff message
-
+        from rtmidi2 import *
         m = MidiOut()
         m.open_port()
         messages = [(0, i, 0) for i in range(127)]
         m.send_messages(144, messages)
+        ```
         """
         cdef uchr_vec m
         m = uchr_vec(3)
@@ -851,15 +1075,25 @@ cdef class MidiOut(MidiBase):
 
     cpdef send_noteon(self, unsigned char channel, unsigned char midinote, unsigned char velocity):
         """
-        NB: channel -> 0-15
+        Send a NOTEON message
+
+        Args:
+            channel: 0-15
+            midinote: a midinote (0-127)
+            velocity: velocity (0-127)
         """
         self._send_raw3(DNOTEON|channel, midinote, velocity)
 
     def send_noteon_many(self, channel not None, notes not None, vels not None):
         """
-        channel: an integer indicating the midi channel, or a list of channels
-                 (must be the same length as notes)
-        notes and vels are sequences of integers.
+        Send many noteon messages at once
+
+        Args:
+            channel: an integer indicating the midi channel, or a list of channels
+                (must be the same length as notes)
+            notes: a list of midinotes
+            vels: a list of velocities
+
         """
         cdef vector[unsigned char]* m = new vector[unsigned char](3)
         if not isinstance(notes, list):
@@ -888,16 +1122,25 @@ cdef class MidiOut(MidiBase):
 
     cpdef send_noteoff(self, unsigned char channel, unsigned char midinote):
         """
-        NB: channel -> 0-15
+        Send a noteoff message
+
+        Args:
+            channel: 0-15
+            midinote: the midinote to stop
         """
         self._send_raw3(DNOTEOFF|channel, midinote, 0)
 
     cpdef send_noteoff_many(self, channels, notes):
         """
-        channels: a list of channels, or a single integer channel
-        notes:    a list of midinotes to be released
+        Send many noteoff messages at once
 
-        NB: channel -> 0-15
+        Args:
+            channels: a list of channels, or a single integer channel
+            notes: a list of midinotes to be released
+
+        !!! note
+
+            A channel has a value between 0-15
         """
         cdef channel, v0
         cdef vector[unsigned char]* m = new vector[unsigned char](3)
@@ -924,26 +1167,48 @@ cdef class MidiOut(MidiBase):
         """
         Return the low-level MIDI backend API used by this instance.
         Use this by comparing the returned value to the module-level ``API_*``
-        constants, e.g.::
+        constants
+
+        Example
+        ------- 
+
+        ```python
+        from rtmidi2 import *
         midiout = rtmidi.MidiOut()
         if midiout.get_current_api() == rtmidi.API_UNIX_JACK:
             print("Using JACK API for MIDI output.")
+        ```
         """
         return self.thisptr.getCurrentApi()
 
+
 cpdef int cents2pitchbend(int cents, int maxdeviation=200):
     """
-    cents: an integer between -maxdeviation and +maxdviation
+    Convert cents to a pitchbend value
+
+    Args:
+        cents: an integer between -maxdeviation and +maxdviation
+
+    Returns:
+        (int) The pitchbend value corresponding to the given cents
     """
     return int((cents+maxdeviation)/(maxdeviation*2.0) * 16383.0 + 0.5)
 
+
 cpdef int pitchbend2cents(int pitchbend, maxcents=200):
+    """
+    Convert a pitchbend value to cents
+
+    Args:
+        pitchbend: an integer between 0 and 16383
+        maxcents: the max. cents deviation 
+
+    Returns:
+        (int) The cents corresponding to the given pitchbend
+    """
     return int(((pitchbend/16383.0)*(maxcents*2.0))-maxcents+0.5)
+
 
 cpdef MidiIn _get_midiin():
     return MidiIn("inspector")
-    # global _midiin
-    # if _midiin is None:
-    #     _midiin = MidiIn()
-    # return _midiin
-
+    

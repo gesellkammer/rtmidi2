@@ -1,7 +1,7 @@
 import sys
 from setuptools import setup, Extension
 
-version = "0.8.4"  # when changing version, this should reflect what is returned by version()
+version = "0.9.0"  # when changing version, this should reflect what is returned by version()
 
 module_source = 'rtmidi2.pyx'
 
@@ -37,7 +37,7 @@ if sys.platform == 'win32':
 
 setup(
     name='rtmidi2',
-    python_requires='>=3.6',
+    python_requires='>=3.7',
     version=version,
     ext_modules=[
         Extension(

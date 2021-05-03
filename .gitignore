@@ -3,3 +3,6 @@ rtmidi2.cpp
 build/
 dist/
 *egg*
+.mypy_cache
+wheelhouse
+site/
