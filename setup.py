@@ -1,12 +1,13 @@
 import sys
 from setuptools import setup, Extension
 
-version = "0.9.0"  # when changing version, this should reflect what is returned by version()
+version = "0.9.1"  
 
 module_source = 'rtmidi2.pyx'
 
+long_description = open("README.rst").read()
+
 extension_args = {}
-print("version: {version}".format(version=version))
 
 if sys.platform.startswith('linux'):
     extension_args = dict(
@@ -37,7 +38,7 @@ if sys.platform == 'win32':
 
 setup(
     name='rtmidi2',
-    python_requires='>=3.7',
+    python_requires='>=3.8',
     version=version,
     ext_modules=[
         Extension(
@@ -57,12 +58,11 @@ setup(
         'Programming Language :: Cython',
         'Topic :: Multimedia :: Sound/Audio :: MIDI',
         'License :: OSI Approved :: MIT License',
-        'Programming Language :: Python :: 2.7',
         'Programming Language :: Python :: 3',
-        'Programming Language :: Python :: 3.4',
         'Topic :: Software Development :: Libraries :: Python Modules'
     ],
     description='Python wrapper for RtMidi written in Cython. Allows sending raw messages, multi-port input and sending multiple messages in one call.',
+    long_description=long_description,
     author='originally by Guido Lorenz, modified by Eduardo Moguillansky',
     author_email='eduardo.moguillansky@gmail.com',
     url="https://github.com/gesellkammer/rtmidi2",        

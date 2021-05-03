@@ -4,15 +4,6 @@
 # cython: checknone=False
 # cython: language_level=3
 
-def version():
-    """
-    Returns the version
-
-    Returns:
-        (tuple[int, int, int]) The version as (major, minor, patch)
-    """
-    return (0, 9, 0)
-
 ### cython imports
 from libcpp.string cimport string
 from libcpp.vector cimport vector
