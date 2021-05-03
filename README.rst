@@ -14,6 +14,15 @@ Installation
     
 This module is compatible with Python 3 >= 3.7 
 
+Documentation
+-------------
+
+https://rtmidi2.readthedocs.io
+
+
+-----
+
+
 Usage Examples
 --------------
 
@@ -77,7 +86,8 @@ Open multiple ports at once
 .. code-block:: python
 
     # get messages from all available ports
-    midi_in = MidiInMulti().open_ports("*")
+    midi_in = MidiInMulti()
+    midi_in.open_ports("*")
 
     def callback(msg, timestamp):
         msgtype, channel = splitchannel(msg[0])
@@ -101,7 +111,8 @@ Send multiple notes at once
 .. code-block:: python
 
     # send a cluster of ALL notes with a duration of 1 second
-    midi_out = MidiOut().open_port()
+    midi_out = MidiOut()
+    midi_out.open_port()
     notes = range(127)
     velocities = [90] * len(notes)
     midi_out.send_noteon_many(0, notes, velocities)

@@ -269,10 +269,10 @@ cdef class MidiIn(MidiBase):
         msgtype, channel = splitchannel(msg[0])
         if msgtype == NOTEON:
             note, velocity = msg[1], msg[2]
-            print "noteon", note, velocity
+            print("noteon", note, velocity)
         elif msgtype == CC:
             cc, value = msg[1:]
-            print "control change", cc, value
+            print("control change", cc, value)
 
     m_in.callback = callback
 
@@ -405,12 +405,12 @@ cdef class MidiInMulti:
 
     def callback(msg, time):
         msgtype, channel = splitchannel(msg[0])
-        print msgtype, msg[1], msg[2]
+        print(msgtype, msg[1], msg[2])
 
     def callback_with_source(src, msg, time):
-        print "message generated from midi-device: ", src
+        print("message generated from midi-device: ", src)
         msgtype, channel = splitchannel(msg[0])
-        print msgtype, msg[1], msg[2]
+        print(msgtype, msg[1], msg[2])
 
     midiin = MidiInMulti().open_ports("*")
     # your callback will be called according to its signature
@@ -690,7 +690,7 @@ cdef class MidiInMulti:
 
         ```python
         def callback_with_source(src, msg, time):
-            print "message generated from midi-device: ", src
+            print("message generated from midi-device: ", src)
             msgtype, channel = splitchannel(msg[0])
             print(msgtype, msg[1], msg[2])
     
