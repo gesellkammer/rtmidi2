@@ -936,9 +936,7 @@ cdef class MidiOut(MidiBase):
     cdef RtMidi* baseptr(self):
         return self.thisptr
 
-    def open_virtual_port(self, port_name):
-        if not isinstance(port_name, bytes):
-            port_name = port_name.encode("ASCII", errors="ignore")
+    def open_virtual_port(self, str port_name):
         if self.virtual_port_opened:
             raise IOError("Only one virtual port can be opened. If you need more, create a new MidiOut")
         self.virtual_port_opened = True

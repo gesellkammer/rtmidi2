@@ -10,8 +10,6 @@ RtMidi is a set of C++ classes (RtMidiIn, RtMidiOut and API-specific classes) th
 
 ## Installation
 
-Binary wheels are provided for all major platforms:
-
 ``` bash
 pip install rtmidi2
 ```
