@@ -884,7 +884,8 @@ def mididump(port_pattern="*", parsable=False, api=API_UNSPECIFIED):
     Returns:
         (MidiInMulti) The MidiInMulti created to listen to all midi inputs
     """
-    m = MidiInMulti().open_ports(port_pattern)
+    m = MidiInMulti()
+    m.open_ports(port_pattern)
     if not parsable:
         m._set_qualified_callback(_callback_mididump_with_src, src_as_string=True)
     else:
