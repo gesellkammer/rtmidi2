@@ -105,6 +105,9 @@ cdef class MidiBase:
         Args:
             port: The port to open (an integer or a string)
 
+        Returns:
+            None
+
         !!! note
 
             The string can contain a glob pattern, in which case it will be
@@ -112,12 +115,13 @@ cdef class MidiBase:
             An integer is the index to the list of available ports
 
         Example
-        =======
+        -------
 
         ```python
         
         from rtmidi2 import MidiIn
-        m = MidiIn().open_port("BCF*")
+        m = MidiIn()
+        m.open_port("BCF*")
         ```
 
         """
@@ -176,10 +180,13 @@ cdef class MidiBase:
         Open a virtual port
 
         Args:
-            port_name: the name of the virtual port
+            port_name (str): the name of the virtual port
+
+        Returns:
+            None
 
         Example
-        =======
+        -------
 
         ```python
 
@@ -204,10 +211,10 @@ cdef class MidiBase:
         Return the indexes of the ports which match the glob pattern
 
         Args:
-            pattern: a glob pattern to match ports
+            pattern (str): a glob pattern to match ports
 
         Returns:
-            a list of port indexes which match the given pattern
+            (list[int]) a list of port indexes which match the given pattern
 
 
         Example
@@ -276,7 +283,7 @@ cdef class MidiIn(MidiBase):
 
     !!! note 
 
-        If you want to listen from multiple ports, use `MidiInMulti`
+        If you want to receive messages from multiple ports, use `MidiInMulti`
 
     For blocking interface, use `midiin.get_message()`
     """
@@ -337,6 +344,9 @@ cdef class MidiIn(MidiBase):
             midi_sysex: if True, sysex messages are ignored
             midi_time: if True, midi time messages are ignored
             midi_sense: if True, midi sense messages are ignored
+
+        Returns:
+            None
         """
         self.thisptr.ignoreTypes(midi_sysex, midi_time, midi_sense)
 
@@ -346,6 +356,9 @@ cdef class MidiIn(MidiBase):
 
         For non-blocking interface, use the callback method (midiin.callback = ...)
 
+        Returns:
+            (list[int] | None) Returns a list of ints between 0-255
+
         A message can be:
         
         * a 3 byte message (cc, noteon, pitchbend): `[(messagetype | channel), value1, value2]`
@@ -353,7 +366,7 @@ cdef class MidiIn(MidiBase):
         * a 1 byte message (start, stop, clock)
         * a sysex message, with variable number of bytes
 
-        To isolate messagetype and channel, do this:
+        To isolate messagetype and channel:
 
         ```python
         
@@ -362,7 +375,7 @@ cdef class MidiIn(MidiBase):
 
         ```
 
-        Or use the utility function splitchannel:
+        Or use the utility function `splitchannel`, which does the same:
 
         ```python
         msgtype, channel = splitchannel(message[0])
@@ -403,8 +416,10 @@ cdef class MidiInMulti:
         msgtype, channel = splitchannel(msg[0])
         print(msgtype, msg[1], msg[2])
 
-    midiin = MidiInMulti().open_ports("*")
-    # your callback will be called according to its signature
+    midiin = MidiInMulti()
+    midiin.open_ports("*")
+
+    # The callback will be called according to its signature
     midiin.callback = callback_with_source   
     ```
     
@@ -420,9 +435,12 @@ cdef class MidiInMulti:
 
     ```python
 
-    multi = MidiInMulti().open_ports("*")
+    multi = MidiInMulti()
+    multi.open_ports("*")
+
     def callback(msg, timestamp):
         print(msg)
+    
     multi.callback = callback
     
     ```
@@ -483,7 +501,7 @@ cdef class MidiInMulti:
         Similar to `get_open_ports`, returns a list of the open ports by name
 
         Returns:
-            a list with the names of the open ports
+            (list[str]) a list with the names of the open ports
         """
         return [self.get_port_name(idx) for idx in self.get_open_ports()]
 
@@ -505,6 +523,7 @@ cdef class MidiInMulti:
         return self.inspector.get_port_name(portindex, encoding)
 
     def get_callback(self):
+        """Returns the python callback of this MidiIn"""
         return self.py_callback
 
     def ports_matching(self, pattern, exclude=None):
@@ -515,14 +534,18 @@ cdef class MidiInMulti:
             pattern: an exact name or a glob patter (str)
             exclude: a glob pattern to exclude
 
+        Returns:
+            (list[int]) A list with the indexes of the ports matching the
+            given pattern
+
         Example
         -------
 
         ```python
-        # get all ports
-        midiin.ports_matching("*")
-
+        
         # open the IAC port in OSX without having to remember the whole name
+        from rtmidi2 import MidiInMulti
+        midiin = MidiInMulti()
         midiin.open_port(midiin.ports_matching("IAC*"))
         ```
         """
@@ -537,11 +560,16 @@ cdef class MidiInMulti:
         Low level interface to opening ports by index. Use open_ports to use a more
         confortable API.
 
-        Example
-        =======
+        Args:
+            port (int): the index of the port to open
 
+        Returns:
+            None
+
+        ## Example
+        
         ```python
-        midiin.open_port(0)  # open the default port
+        midiin.open_port(0)    # open the default port
 
         # open all ports
         for i in len(midiin.ports):
@@ -549,7 +577,9 @@ cdef class MidiInMulti:
 
         ```
 
-        SEE ALSO: open_ports
+        ## See Also
+        
+        open_ports
         """
         if port >= len(self.inspector.ports):
             raise ValueError("Port out of range")
@@ -574,26 +604,33 @@ cdef class MidiInMulti:
             patterns: all ports matching any of the patterns will be opened
             exclude: an optional exclude pattern
 
+        Returns:
+            None
+
         ```pyton
         # dont care to specify the full name of the Korg device
         midiin.open_ports("BCF2000", "Korg*")
         ```
 
-        Example
-        -------
-
+        ## Example
+        
         ```python
 
         # Transpose all notes received one octave up,
         # send them to a virtual port named "OUT"
-        midiin = MidiInMulti().open_ports("*")
-        midiout = MidiOut().open_virtual_port("OUT")
+        midiin = MidiInMulti()
+        midiin.open_ports("*")
+
+        midiout = MidiOut()
+        midiout.open_virtual_port("OUT")
+        
         def callback(msg, timestamp):
             msgtype, ch = splitchannel(msg[0])
             if msgtype == NOTEON:
                 midiout.send_noteon(ch,  msg[1] + 12, msg[2])
             elif msgtype == NOTEOFF:
                 midiout.send_noteoff(ch, msg[1] + 12, msg[2])
+        
         midiin.callback = callback
         ```
         """
@@ -616,7 +653,14 @@ cdef class MidiInMulti:
         return 1
 
     cpdef int close_port(self, unsigned int port):
-        """returns 1 if OK, 0 if failed"""
+        """
+        Close the given port
+
+        Args:
+            port (int): the index of the port to close
+
+        Returns: 1 if port was succesfully closed, 0 if failed
+        """
         if port not in self._openedports:
             return 0
         cdef int port_index = self._openedports.index(port)
@@ -676,8 +720,12 @@ cdef class MidiInMulti:
                 callback is `func(src, msg, time)`. In this case, if src_as_string is True,
                 the source is the string representing the source. Otherwise, it is the port number.
 
+        Returns:
+            None
+
+
         Example
-        =======
+        -------
 
         ```python
         def callback_with_source(src, msg, time):
@@ -800,8 +848,8 @@ def midi2note(int midinote):
         (str) the corresponding note name
 
     Example
-    =======
-
+    -------
+    
     ```python
     >>> midi2note(60)
     C4
