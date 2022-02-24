@@ -24,6 +24,10 @@ jobs:
               
         run: python -m pip install cibuildwheel twine virtualenv numpy cython
 
+      - name: Install libraries linux
+        if: runner.os == 'linux'
+        run: |
+            sudo apt-get install libasound2-dev libjack-jackd2-dev
       - name: Build wheels
         run: |
             # python setup.py build_ext
