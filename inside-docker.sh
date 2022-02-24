@@ -20,7 +20,7 @@ yum install -y jack-audio-connection-kit-devel
 
 
 # Compile wheels. Customize the wildcard to match the desired python versions
-for PYBIN in /opt/python/cp3[8-9]*/bin; do
+for PYBIN in /opt/python/cp3{8,9,10}*/bin; do
     "${PYBIN}/pip" install --upgrade pip
     "${PYBIN}/pip" wheel /io/ -w wheelhouse/
 done

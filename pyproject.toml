@@ -9,10 +9,6 @@ requires_python = "^3.8"
 homepage = "https://github.com/gesellkammer/rtmidi2"
 repository = "https://github.com/gesellkammer/rtmidi2"
 
-dependencies = [
-  'numpy>=1.22',
-]
-
 classifiers = [
     "Topic :: Software Development"
 ]
@@ -22,8 +18,7 @@ classifiers = [
 requires = [
     "setuptools>=42",
     "wheel",
-    "cython",
-    "numpy>=1.22"
+    "cython"
 ]
 
 build-backend = "setuptools.build_meta"
