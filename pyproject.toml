@@ -3,11 +3,9 @@ name = "rtmidi2"
 authors = [
     { name = "Eduardo Moguillansky", email = "eduardo.moguillansky@gmail.com" }
 ]
-license = "MIT"
 readme = "README.rst"
-requires_python = "^3.8"
-homepage = "https://github.com/gesellkammer/rtmidi2"
-repository = "https://github.com/gesellkammer/rtmidi2"
+license = {file = "LICENSE"}
+requires-python = ">=3.8"
 
 classifiers = [
     "Topic :: Software Development"
@@ -16,10 +14,13 @@ classifiers = [
 [build-system]
 
 requires = [
-    "setuptools>=42",
+    "setuptools>=61",
     "wheel",
     "cython"
 ]
 
 build-backend = "setuptools.build_meta"
 
+[project.urls]
+homepage = "https://github.com/gesellkammer/rtmidi2"
+repository = "https://github.com/gesellkammer/rtmidi2"
