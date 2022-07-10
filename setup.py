@@ -61,7 +61,7 @@ setup(
         'Programming Language :: Python :: 3',
         'Topic :: Software Development :: Libraries :: Python Modules'
     ],
-    description='Python wrapper for RtMidi written in Cython. Allows sending raw messages, multi-port input and sending multiple messages in one call.',
+    dynamic=['description'],
     long_description=long_description,
     author='originally by Guido Lorenz, modified by Eduardo Moguillansky',
     author_email='eduardo.moguillansky@gmail.com',

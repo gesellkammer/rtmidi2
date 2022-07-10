@@ -1,17 +1,20 @@
 [project]
 name = "rtmidi2"
+description = "Python wrapper for RtMidi written in Cython. Allows sending raw messages, multi-port input and sending multiple messages in one call."
 authors = [
     { name = "Eduardo Moguillansky", email = "eduardo.moguillansky@gmail.com" }
 ]
-license = "MIT"
+license = { text = "MIT" }
 readme = "README.rst"
-requires_python = "^3.8"
-homepage = "https://github.com/gesellkammer/rtmidi2"
-repository = "https://github.com/gesellkammer/rtmidi2"
-
+requires-python = ">=3.8"
+version = "1.1.0"
 classifiers = [
     "Topic :: Software Development"
 ]
+
+[project.urls]
+homepage = "https://github.com/gesellkammer/rtmidi2"
+repository = "https://github.com/gesellkammer/rtmidi2"
 
 [build-system]
 
