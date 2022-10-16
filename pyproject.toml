@@ -3,7 +3,7 @@ name = "rtmidi2"
 authors = [
     { name = "Eduardo Moguillansky", email = "eduardo.moguillansky@gmail.com" }
 ]
-license = "MIT"
+
 readme = "README.rst"
 requires_python = "^3.8"
 homepage = "https://github.com/gesellkammer/rtmidi2"
