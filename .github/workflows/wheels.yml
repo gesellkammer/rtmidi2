@@ -8,7 +8,7 @@ jobs:
     runs-on: ${{ matrix.os }}
     strategy:
       matrix:
-        os: [macOS-latest, windows-latest]
+        os: [macOS-latest, windows-latest, ubuntu-latest]
         # os: [windows-2019]
         # os: [ubuntu-20.04, windows-2019, macOS-10.15]
     steps:
@@ -23,7 +23,7 @@ jobs:
 
       - name: Build wheels
         env:
-            CIBW_BUILD: 'cp38-* cp39-* cp310-*'
+            CIBW_BUILD: 'cp39-* cp310-* cp311-*'
             CIBW_SKIP: 'pp* *686* *-musllinux_*'
             CIBW_BEFORE_ALL_LINUX: yum install -y alsa-lib-devel jack-audio-connection-kit-devel
         run: |
