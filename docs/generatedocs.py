@@ -18,8 +18,10 @@ def main(destfolder: str):
     dest = Path(destfolder)
     reference = doctools.generateDocsForModule(rtmidi2, 
                                                renderConfig=renderConfig, 
-                                               exclude={'MidiBase'},
+                                               # exclude={'MidiBase'},
                                                title="Reference")
+    referenceout = dest / "reference.md"
+    print(f"Generating refenrece.md at {referenceout}")
     open(dest / "reference.md", "w").write(reference)
     
     
