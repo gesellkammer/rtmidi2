@@ -4,7 +4,7 @@ rtmidi2
 
 |sh-downloads|
 
-.. |sh-downloads| image:: https://pepy.tech/project/rtmidi2
+.. |sh-downloads| image:: https://static.pepy.tech/badge/rtmidi2
 
 
 Python wrapper for RtMidi_, the lightweight, cross-platform MIDI I/O library. For Linux, Mac OS X and Windows.
