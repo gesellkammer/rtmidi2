@@ -16,13 +16,15 @@ if sys.platform.startswith('linux'):
             ('__LINUX_ALSA__', None),
             ('__UNIX_JACK__', None)
         ],
-        libraries=['asound', 'pthread', 'jack']
+        libraries=['asound', 'pthread', 'jack'],
+        extra_compile_args=['-std=c++11'],
+
     )
 
 if sys.platform == 'darwin':
     extension_args = dict(
         define_macros=[('__MACOSX_CORE__', None)],
-        extra_compile_args=['-frtti'],
+        extra_compile_args=['-frtti', '-std=c++11'],
         extra_link_args=[
             '-framework', 'CoreMidi',
             '-framework', 'CoreAudio',
@@ -33,7 +35,8 @@ if sys.platform == 'darwin':
 if sys.platform == 'win32':
     extension_args = dict(
         define_macros=[('__WINDOWS_MM__', None)],
-        libraries=['winmm']
+        libraries=['winmm'],
+        extra_compile_args=['-std=c++11'],
     )
 
 setup(

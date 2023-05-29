@@ -6,3 +6,4 @@ dist/
 .mypy_cache
 wheelhouse
 site/
+*.kate*
