@@ -381,8 +381,9 @@ cdef class MidiIn(MidiBase):
         msgtype, channel = splitchannel(message[0])
         ```
         """
-        cdef vector[unsigned char]* message_vector = new vector[unsigned char]()
-        cdef double deltatime = self.thisptr.getMessage(message_vector)
+        # cdef vector[unsigned char]* message_vector = new vector[unsigned char]()
+        cdef vector[unsigned char] message_vector
+        cdef double deltatime = self.thisptr.getMessage(&message_vector)
         cdef list message
         self.deltatime = deltatime
         if not message_vector.empty():
