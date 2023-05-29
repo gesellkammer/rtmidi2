@@ -63,13 +63,16 @@ Get incoming messages - blocking interface
 
 .. code-block:: python
 
-   midi_in = rtmidi.MidiIn()
-   midi_in.open_port(0)
+    import time
+    midi_in = rtmidi.MidiIn()
+    midi_in.open_port(0)
 
-   while True:
-       message, delta_time = midi_in.get_message()  # will block until a message is available
-       if message:
+    while True:
+        message = midi_in.get_message()
+        if message:
             print(message, delta_time)
+        else:
+            time.sleep(0.01)
 
 
 Get incoming messages using a callback -- non blocking
