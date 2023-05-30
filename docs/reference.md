@@ -253,8 +253,12 @@ MidiIn.get_message(self)
 ```
 
 
-Get a midi message (blocking)
+Get a midi message
 
+
+This call will return immediately, returning a list of ints, each
+in the range 0-255 representing the chars in the message, or None
+if the queue was empty
 
 For non-blocking interface, use the callback method (midiin.callback = ...)
 
