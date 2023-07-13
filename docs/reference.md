@@ -4,6 +4,30 @@
 ---------
 
 
+| Class  | Description  |
+| :----  | :----------- |
+| `MidiBase` | Base class for both MidiIn and MidiOut |
+| `MidiIn` | Create a MidiIn object |
+| `MidiInMulti` | MidiInMulti(clientname=None, queuesize=1024, Api api=UNSPECIFIED) |
+| `MidiOut` | MidiOut(clientname=None, api=API_UNSPECIFIED) |
+
+| Function  | Description  |
+| :-------  | :----------- |
+| `callback_mididump` | Use this function as your callback to dump all received messages |
+| `cents2pitchbend` | Convert cents to a pitchbend value |
+| `get_in_ports` | Returns a list of available in ports |
+| `get_out_ports` | Returns a list of available out ports |
+| `midi2note` | convert a midinote to the string representation of the note |
+| `mididump` | Listen to all ports matching pattern and print the received messages |
+| `msgtype2str` | Convert the message-type as returned by splitchannel(msg[0])[0] to a readable string |
+| `pitchbend2cents` | Convert a pitchbend value to cents |
+| `splitchannel` | Split the messagetype and the channel as returned by get_message |
+
+
+
+---------
+
+
 ## MidiBase
 
 ### 
