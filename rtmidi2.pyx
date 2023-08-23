@@ -21,18 +21,19 @@ import fnmatch
 PyEval_InitThreads()
 
 ### constants
-DEF DNOTEON     = 144
-DEF DCC         = 176
-DEF DNOTEOFF    = 128
-DEF DPROGCHANGE = 192
-DEF DPITCHWHEEL = 224
-DEF QUEUESIZE   = 1024
+# DEF DNOTEON     = 144
+# DEF DCC         = 176
+# DEF DNOTEOFF    = 128
+# DEF DPROGCHANGE = 192
+# DEF DPITCHWHEEL = 224
+# DEF QUEUESIZE   = 1024
 
-NOTEON     = DNOTEON
-CC         = DCC
-NOTEOFF    = DNOTEOFF
-PROGCHANGE = DPROGCHANGE
-PITCHWHEEL = DPITCHWHEEL
+QUEUESIZE  = 1024
+NOTEON     = 144
+CC         = 176
+NOTEOFF    = 128
+PROGCHANGE = 192
+PITCHWHEEL = 224
 
 _midiin = None
 
@@ -63,13 +64,14 @@ API_RTMIDI_DUMMY = RTMIDI_DUMMY
 
 ### C++ interface
 cdef extern from "RtMidi/RtMidi.h":
-    ctypedef void (*RtMidiCallback)(double timeStamp, vector[unsigned char]* message, void* userData)
+    ctypedef void (*RtMidiCallback)(double timeStamp, vector[unsigned char]* message, void* userData) except * with gil
+
     cdef cppclass RtMidi:
-        void openPort(unsigned int portNumber) except+
-        void openVirtualPort(string portName) except+
-        unsigned int getPortCount()
-        string getPortName(unsigned int portNumber) except+
-        void closePort() except+
+        void openPort(unsigned int portNumber) except *
+        void openVirtualPort(string portName) except *
+        unsigned int getPortCount() except *
+        string getPortName(unsigned int portNumber) except *
+        void closePort() except *
 
     cdef cppclass RtMidiIn(RtMidi):
         RtMidiIn(RtMidi.Api api, string clientName, unsigned int queueSizeLimit) except+
@@ -1052,7 +1054,7 @@ cdef class MidiOut(MidiBase):
             return
         b1 = transp & 127
         b2 = transp >> 7
-        self._send_raw3(DPITCHWHEEL+channel, b1, b2)
+        self._send_raw3(224 | channel, b1, b2)
 
     cdef inline void _send_raw3(self, unsigned char b0, unsigned char b1, unsigned char b2):
         cdef uchr_vec msg_v
@@ -1072,7 +1074,7 @@ cdef class MidiOut(MidiBase):
             cc: the CC index (0-127)
             value: the CC value (0-127)
         """
-        self._send_raw3(DCC | channel, cc, value)
+        self._send_raw3(176 | channel, cc, value)
 
     cpdef send_messages(self, int messagetype, messages):
         """
@@ -1125,7 +1127,7 @@ cdef class MidiOut(MidiBase):
             midinote: a midinote (0-127)
             velocity: velocity (0-127)
         """
-        self._send_raw3(DNOTEON|channel, midinote, velocity)
+        self._send_raw3(144 | channel, midinote, velocity)
 
     def send_noteon_many(self, channel not None, notes not None, vels not None):
         """
@@ -1144,7 +1146,7 @@ cdef class MidiOut(MidiBase):
             raise NotImplemented("notes and vels should be lists. other containers are not yet implemented")
         if isinstance(channel, list) and isinstance(notes, list) and isinstance(vels, list):
             for i in range(len(<list>notes)):
-                m[0][0] = DNOTEON |<unsigned char>(<list>channel)[i]
+                m[0][0] = 144 |<unsigned char>(<list>channel)[i]
                 m[0][1] = <unsigned char>(<list>notes)[i]
                 m[0][2] = <unsigned char>(<list>vels)[i]
                 self.thisptr.sendMessage(m)
@@ -1171,7 +1173,8 @@ cdef class MidiOut(MidiBase):
             channel: 0-15
             midinote: the midinote to stop
         """
-        self._send_raw3(DNOTEOFF|channel, midinote, 0)
+        # 128 = NOTEOFF
+        self._send_raw3(128|channel, midinote, 0)
 
     cpdef send_noteoff_many(self, channels, notes):
         """
@@ -1189,7 +1192,7 @@ cdef class MidiOut(MidiBase):
         cdef vector[unsigned char]* m = new vector[unsigned char](3)
         m[0][2] = 0
         if isinstance(channels, int):
-            v0 = DNOTEOFF | <unsigned char>channels
+            v0 = 128 | <unsigned char>channels
             if isinstance(notes, list):
                 for i in range(len(<list>notes)):
                     m[0][0] = v0
@@ -1200,7 +1203,7 @@ cdef class MidiOut(MidiBase):
                 raise NotImplemented("only lists implemented right now")
         elif isinstance(channels, list):
             for i in range(len(<list>notes)):
-                m[0][0] = DNOTEOFF | <unsigned char>(<list>channels)[i]
+                m[0][0] = 128 | <unsigned char>(<list>channels)[i]
                 m[0][1] = <unsigned char>(<list>notes)[i]
                 self.thisptr.sendMessage(m)
         del m
