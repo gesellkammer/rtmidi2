@@ -812,7 +812,7 @@ cpdef tuple splitchannel(int firstbyte):
 
 def _func_get_numargs(func):
     try:
-        spec = inspect.getargspec(func)
+        spec = inspect.getfullargspec(func)
         numargs = sum(1 for a in spec.args if a is not "self")
         return numargs
     except TypeError:
