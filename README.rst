@@ -9,7 +9,7 @@ rtmidi2
 
 Python wrapper for RtMidi_, the lightweight, cross-platform MIDI I/O library. For Linux, Mac OS X and Windows.
 
-Based on rtmidi-python
+Based on rtmidi-python, uses rtmidi version 6.0
 
 Installation
 ------------
@@ -17,7 +17,7 @@ Installation
     pip install rtmidi2
 
     
-This module is compatible with Python 3 >= 3.7 
+This module is compatible with Python 3 >= 3.9 
 
 Documentation
 -------------
