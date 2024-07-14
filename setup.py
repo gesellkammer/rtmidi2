@@ -1,7 +1,7 @@
 import sys
 from setuptools import setup, Extension
 
-version = "1.3.0" 
+version = "1.4.0" 
 
 module_source = 'rtmidi2.pyx'
 
