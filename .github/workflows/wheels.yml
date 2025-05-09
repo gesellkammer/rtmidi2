@@ -12,7 +12,7 @@ jobs:
         # os: [windows-2019]
         # os: [ubuntu-20.04, windows-2019, macOS-10.15]
     steps:
-      - uses: actions/checkout@v2
+      - uses: actions/checkout@v4
 
       # Used to host cibuildwheel
       - uses: actions/setup-python@v2
@@ -30,9 +30,11 @@ jobs:
         run: |
             # python setup.py build_ext
             python -m cibuildwheel --output-dir wheelhouse
-      - uses: actions/upload-artifact@v2
+      - uses: actions/upload-artifact@v4
         with:
+          name: cibw-wheels-${{ matrix.os }}-${{ strategy.job-index }}
           path: ./wheelhouse/*.whl
+          
       - name: Upload wheels
         env:
             TWINE_USERNAME: __token__
@@ -40,5 +42,6 @@ jobs:
         run: |
             echo $TWINE_USERNAME
             echo $TWINE_PASSWORD
+            python -m pip install -U twine virtualenv
             twine upload --skip-existing wheelhouse/*.whl
         continue-on-error: true
