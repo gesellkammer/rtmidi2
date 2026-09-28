@@ -786,7 +786,7 @@ cdef class MidiInMulti:
                 self.hascallback[port] = True
 
     def get_message(self, int gettime=1):
-        raise NotImplemented("The blocking interface is not implemented for multiple "
+        raise NotImplementedError("The blocking interface is not implemented for multiple "
                              "inputs. Use the callback system")
 
 
@@ -1148,7 +1148,7 @@ cdef class MidiOut(MidiBase):
         cdef vector[unsigned char]* m = new vector[unsigned char](3)
         if not isinstance(notes, list):
             del m
-            raise NotImplemented("notes and vels should be lists. other containers are not yet implemented")
+            raise NotImplementedError("notes and vels should be lists. other containers are not yet implemented")
         if isinstance(channel, list) and isinstance(notes, list) and isinstance(vels, list):
             for i in range(len(<list>notes)):
                 m[0][0] = 144 |<unsigned char>(<list>channel)[i]
@@ -1205,7 +1205,7 @@ cdef class MidiOut(MidiBase):
                     self.thisptr.sendMessage(m)
             else:
                 del m
-                raise NotImplemented("only lists implemented right now")
+                raise NotImplementedError("only lists implemented right now")
         elif isinstance(channels, list):
             for i in range(len(<list>notes)):
                 m[0][0] = 128 | <unsigned char>(<list>channels)[i]
