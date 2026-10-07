@@ -6,10 +6,10 @@
 
 | Class  | Description  |
 | :----  | :----------- |
-| `MidiBase` | Base class for both MidiIn and MidiOut |
-| `MidiIn` | Create a MidiIn object |
-| `MidiInMulti` | MidiInMulti(clientname=None, queuesize=1024, Api api=UNSPECIFIED) |
-| `MidiOut` | MidiOut(clientname=None, api=API_UNSPECIFIED) |
+|  [MidiBase](#midibase) | Base class for both MidiIn and MidiOut |
+|  [MidiIn](#midiin) | Create a MidiIn object |
+|  [MidiInMulti](#midiinmulti) | MidiInMulti(clientname=None, queuesize=QUEUESIZE, Api api=UNSPECIFIED) |
+|  [MidiOut](#midiout) | MidiOut(clientname=None, api=API_UNSPECIFIED) |
 
 | Function  | Description  |
 | :-------  | :----------- |
@@ -29,7 +29,6 @@
 
 
 ## MidiBase
-
 ### 
 
 
@@ -45,6 +44,32 @@ Base class for both MidiIn and MidiOut
 
 Methods defined here are inherited and available for both midi input 
 and output
+
+
+---------
+
+
+**Summary**
+
+
+
+| Property  | Description  |
+| :-------- | :----------- |
+| ports | Returns a list with the names of the available ports |
+
+
+| Method  | Description  |
+| :------ | :----------- |
+| [close_port](#close_port) | Close an open port |
+| [get_current_api](#get_current_api) | Return the low-level MIDI backend API used by this instance. |
+| [get_port_name](#get_port_name) | Return name of given port number. |
+| [open_port](#open_port) | Open a port by index or name |
+| [open_virtual_port](#open_virtual_port) | Open a virtual port |
+| [ports_matching](#ports_matching) | Return the indexes of the ports which match the glob pattern |
+
+
+---------
+
 
 **Attributes**
 
@@ -70,12 +95,29 @@ Close an open port
 
 ----------
 
+### get\_current\_api
+
+
+```python
+
+MidiBase.get_current_api(self)
+
+```
+
+
+Return the low-level MIDI backend API used by this instance.
+
+
+Compare against the module-level ``API_*`` constants.
+
+----------
+
 ### get\_port\_name
 
 
 ```python
 
-MidiBase.get_port_name(self, unsigned int port, encoding=u'utf-8')
+MidiBase.get_port_name(self, unsigned int port, encoding='utf-8')
 
 ```
 
@@ -87,7 +129,8 @@ Return name of given port number.
 **Args**
 
 * **port**: the port index
-* **encoding**: the encoding used to decode the name
+* **encoding** (`str`): the encoding used to decode the name (*default*:
+    `utf-8`)
 
 **Returns**
 
@@ -127,7 +170,7 @@ m.open_port("BCF*")
 
 **Args**
 
-* **port**: The port to open (an integer or a string)
+* **port** (`int`): The port to open (an integer or a string) (*default*: `0`)
 
 ----------
 
@@ -136,7 +179,7 @@ m.open_port("BCF*")
 
 ```python
 
-MidiBase.open_virtual_port(self, unicode port_name)
+MidiBase.open_virtual_port(self, str port_name)
 
 ```
 
@@ -166,7 +209,7 @@ midiin.open_virtual_port("myport")
 
 ```python
 
-MidiBase.ports_matching(self, unicode pattern)
+MidiBase.ports_matching(self, pattern)
 
 ```
 
@@ -196,11 +239,11 @@ allports = midiin.ports_matching("*")
 &nbsp;&nbsp;&nbsp;&nbsp;(`list[int]`) a list of port indexes which match the given pattern
 
 
+
 ---------
 
 
 ## MidiIn
-
  - Base Class: [MidiBase](#midibase)
 
 ### 
@@ -255,10 +298,33 @@ For blocking interface, use `midiin.get_message()`
 * **queuesize** (`int`): the size of the queue in bytes.
 * **api**: the api used (API_xxx)
 
+
+---------
+
+
+**Summary**
+
+
+
+| Property  | Description  |
+| :-------- | :----------- |
+| callback | - |
+| deltatime | - |
+
+
+| Method  | Description  |
+| :------ | :----------- |
+| [get_current_api](#get_current_api) | MidiIn.get_current_api(self) |
+| [get_message](#get_message) | Get a midi message |
+| [ignore_types](#ignore_types) | Don't react to these messages. |
+
+
+---------
+
+
 **Attributes**
 
 * **callback**
-
 * **deltatime**
 
 
@@ -266,6 +332,20 @@ For blocking interface, use `midiin.get_message()`
 
 
 **Methods**
+
+### get\_current\_api
+
+
+```python
+
+def get_current_api(self) -> None
+
+```
+
+
+MidiIn.get_current_api(self)
+
+----------
 
 ### get\_message
 
@@ -336,16 +416,19 @@ where your device acts as a midiclock but your not interested in that.
 
 **Args**
 
-* **midi_sysex**: if True, sysex messages are ignored
-* **midi_time**: if True, midi time messages are ignored
-* **midi_sense**: if True, midi sense messages are ignored
+* **midi_sysex** (`bool`): if True, sysex messages are ignored (*default*:
+    `True`)
+* **midi_time** (`bool`): if True, midi time messages are ignored (*default*:
+    `True`)
+* **midi_sense** (`bool`): if True, midi sense messages are ignored (*default*:
+    `True`)
+
 
 
 ---------
 
 
 ## MidiOut
-
  - Base Class: [MidiBase](#midibase)
 
 ### 
@@ -361,7 +444,48 @@ MidiOut(clientname=None, api=API_UNSPECIFIED)
 ---------
 
 
+**Summary**
+
+
+
+| Method  | Description  |
+| :------ | :----------- |
+| [close_port](#close_port) | MidiOut.close_port(self) |
+| [get_current_api](#get_current_api) | Return the low-level MIDI backend API used by this instance. |
+| [open_virtual_port](#open_virtual_port) | MidiOut.open_virtual_port(self, str port_name) |
+| [send_cc](#send_cc) | Send a CC message |
+| [send_message](#send_message) | Send a MIDI message given as a list/tuple of ints (0-255). |
+| [send_messages](#send_messages) | | Message type | Value | |
+| [send_noteoff](#send_noteoff) | Send a noteoff message |
+| [send_noteoff_many](#send_noteoff_many) | Send many noteoff messages at once |
+| [send_noteon](#send_noteon) | Send a NOTEON message |
+| [send_noteon_many](#send_noteon_many) | Send many noteon messages at once |
+| [send_pitchbend](#send_pitchbend) | Send a pitchbend message |
+| [send_raw](#send_raw) | MidiOut.send_raw(self, *bytes) |
+| [send_sysex](#send_sysex) | Send a sysex message |
+
+
+---------
+
+
+---------
+
+
 **Methods**
+
+### close\_port
+
+
+```python
+
+def close_port(self) -> None
+
+```
+
+
+MidiOut.close_port(self)
+
+----------
 
 ### get\_current\_api
 
@@ -383,8 +507,8 @@ constants
 
 ```python
 from rtmidi2 import *
-midiout = rtmidi.MidiOut()
-if midiout.get_current_api() == rtmidi.API_UNIX_JACK:
+midiout = MidiOut()
+if midiout.get_current_api() == API_UNIX_JACK:
     print("Using JACK API for MIDI output.")
 ```
 
@@ -400,7 +524,7 @@ def open_virtual_port(self, port_name) -> None
 ```
 
 
-MidiOut.open_virtual_port(self, unicode port_name)
+MidiOut.open_virtual_port(self, str port_name)
 
 
 
@@ -415,7 +539,7 @@ MidiOut.open_virtual_port(self, unicode port_name)
 
 ```python
 
-MidiOut.send_cc(self, unsigned char channel, unsigned char cc, unsigned char value)
+MidiOut.send_cc(self, channel, cc, value)
 
 ```
 
@@ -432,6 +556,30 @@ Send a CC message
 
 ----------
 
+### send\_message
+
+
+```python
+
+MidiOut.send_message(self, msg)
+
+```
+
+
+Send a MIDI message given as a list/tuple of ints (0-255).
+
+
+This is an alias kept for compatibility; ``send_raw(*msg)`` is
+equivalent.
+
+
+
+**Args**
+
+* **msg**:
+
+----------
+
 ### send\_messages
 
 
@@ -440,6 +588,9 @@ Send a CC message
 MidiOut.send_messages(self, int messagetype, messages)
 
 ```
+
+
+| Message type | Value |
 
 
 | Message type | Value |
@@ -467,7 +618,7 @@ m.send_messages(144, messages)
 **Args**
 
 * **messagetype**: an integer identifying the kind of message
-* **messages**: a list of tuples of the form `(channel, value1, value2)`
+* **messages**: a sequence of tuples of the form `(channel, value1, value2)`
 
 ----------
 
@@ -476,7 +627,7 @@ m.send_messages(144, messages)
 
 ```python
 
-MidiOut.send_noteoff(self, unsigned char channel, unsigned char midinote)
+MidiOut.send_noteoff(self, channel, midinote)
 
 ```
 
@@ -513,8 +664,8 @@ Send many noteoff messages at once
 
 **Args**
 
-* **channels**: a list of channels, or a single integer channel
-* **notes**: a list of midinotes to be released
+* **channels**: a sequence of channels, or a single integer channel
+* **notes**: a sequence of midinotes to be released
 
 ----------
 
@@ -523,7 +674,7 @@ Send many noteoff messages at once
 
 ```python
 
-MidiOut.send_noteon(self, unsigned char channel, unsigned char midinote, unsigned char velocity)
+MidiOut.send_noteon(self, channel, midinote, velocity)
 
 ```
 
@@ -556,10 +707,10 @@ Send many noteon messages at once
 
 **Args**
 
-* **channel**: an integer indicating the midi channel, or a list of channels
+* **channel**: an integer indicating the midi channel, or a sequence of channels
     (must be the same length as notes)
-* **notes**: a list of midinotes
-* **vels**: a list of velocities
+* **notes**: a sequence of midinotes
+* **vels**: a sequence of velocities
 
 ----------
 
@@ -568,7 +719,7 @@ Send many noteon messages at once
 
 ```python
 
-MidiOut.send_pitchbend(self, unsigned char channel, unsigned int transp)
+MidiOut.send_pitchbend(self, channel, transp)
 
 ```
 
@@ -591,7 +742,7 @@ the pitch-wheel. To convert cents to pitchbend (cents between -200 and 200), use
 **Args**
 
 * **channel**: 0-15
-* **transp**:
+* **transp**: 0 to 16383
 
 ----------
 
@@ -638,17 +789,17 @@ and an end byte 0xF7. The bytes need to be in the range 0-127
 * **bytes**: the content of the sysex message.
 
 
+
 ---------
 
 
 ## MidiInMulti
-
 ### 
 
 
 ```python
 
-MidiInMulti(clientname=None, queuesize=1024, Api api=UNSPECIFIED)
+MidiInMulti(clientname=None, queuesize=QUEUESIZE, Api api=UNSPECIFIED)
 
 ```
 
@@ -708,14 +859,46 @@ multi.callback = callback
 * **queuesize**: the size of the queue in bytes
 * **api**: the api used
 
+
+---------
+
+
+**Summary**
+
+
+
+| Property  | Description  |
+| :-------- | :----------- |
+| callback | - |
+| clientname | - |
+| inspector | - |
+| ports | - |
+
+
+| Method  | Description  |
+| :------ | :----------- |
+| [close_port](#close_port) | Close the given port |
+| [close_ports](#close_ports) | closes all ports and deactivates any callback. |
+| [get_callback](#get_callback) | Returns the python callback of this MidiIn |
+| [get_current_api](#get_current_api) | Return the low-level MIDI backend API used by the open ports. |
+| [get_message](#get_message) | MidiInMulti.get_message(self, int gettime=1) |
+| [get_open_ports](#get_open_ports) | Returns a list of the open ports, by index |
+| [get_open_ports_byname](#get_open_ports_byname) | Similar to `get_open_ports`, returns a list of the open ports by name |
+| [get_port_name](#get_port_name) | Return name of given port number. |
+| [open_port](#open_port) | Low level interface to opening ports by index. Use open_ports to use a more |
+| [open_ports](#open_ports) | You can specify multiple patterns. Of course a pattern can also |
+| [ports_matching](#ports_matching) | Return the indexes of the ports which match the glob pattern |
+| [set_callback](#set_callback) | This is the same as `midiin.callback = mycallback`, but lets you specify how callback is called |
+
+
+---------
+
+
 **Attributes**
 
 * **callback**
-
 * **clientname**
-
 * **inspector**
-
 * **ports**
 
 
@@ -775,12 +958,30 @@ Returns the python callback of this MidiIn
 
 ----------
 
+### get\_current\_api
+
+
+```python
+
+MidiInMulti.get_current_api(self)
+
+```
+
+
+Return the low-level MIDI backend API used by the open ports.
+
+
+Compare against the module-level ``API_*`` constants.
+Raises RuntimeError if no port is open.
+
+----------
+
 ### get\_message
 
 
 ```python
 
-def get_message(self, gettime) -> None
+def get_message(self, gettime: int = 1) -> None
 
 ```
 
@@ -791,7 +992,7 @@ MidiInMulti.get_message(self, int gettime=1)
 
 **Args**
 
-* **gettime**:
+* **gettime** (`int`):  (*default*: `1`)
 
 ----------
 
@@ -843,7 +1044,7 @@ Similar to `get_open_ports`, returns a list of the open ports by name
 
 ```python
 
-MidiInMulti.get_port_name(self, int portindex, encoding=u'utf-8')
+MidiInMulti.get_port_name(self, int portindex, encoding='utf-8')
 
 ```
 
@@ -860,7 +1061,8 @@ return string un-decoded.
 **Args**
 
 * **portindex**: the index of the port
-* **encoding**: the encoding used to convert the name to a str
+* **encoding** (`str`): the encoding used to convert the name to a str
+    (*default*: `utf-8`)
 
 **Returns**
 
@@ -953,7 +1155,7 @@ midiin.callback = callback
 **Args**
 
 * **patterns**: all ports matching any of the patterns will be opened
-* **exclude**: an optional exclude pattern
+* **exclude**: an optional exclude pattern (*default*: `None`)
 
 ----------
 
@@ -985,7 +1187,7 @@ midiin.open_port(midiin.ports_matching("IAC*"))
 **Args**
 
 * **pattern**: an exact name or a glob patter (str)
-* **exclude**: a glob pattern to exclude
+* **exclude**: a glob pattern to exclude (*default*: `None`)
 
 **Returns**
 
@@ -1032,7 +1234,8 @@ midiin.set_callback(callback_with_source)
 * **src_as_string** (`bool`): This only applies for the case where your
     callback is `func(src, msg, time)`. In this case, if src_as_string is True,
     the source is the string representing the source. Otherwise, it is the port
-    number.
+    number. (*default*: `True`)
+
 
 
 ---------
@@ -1090,7 +1293,7 @@ Convert cents to a pitchbend value
 **Args**
 
 * **cents**: an integer between -maxdeviation and +maxdviation
-* **maxdeviation**:
+* **maxdeviation** (`int`):  (*default*: `200`)
 
 **Returns**
 
@@ -1183,7 +1386,7 @@ C4
 
 ```python
 
-mididump(port_pattern=u'*', parsable=False, api=API_UNSPECIFIED)
+mididump(port_pattern='*', parsable=False, api=API_UNSPECIFIED)
 
 ```
 
@@ -1264,7 +1467,7 @@ Convert a pitchbend value to cents
 **Args**
 
 * **pitchbend**: an integer between 0 and 16383
-* **maxcents**: the max. cents deviation
+* **maxcents** (`int`): the max. cents deviation (*default*: `200`)
 
 **Returns**
 

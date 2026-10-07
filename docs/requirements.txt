@@ -1,1 +1,2 @@
 mkdocs-material
+emlib  # needed by docs/generatedocs.py to regenerate reference.md

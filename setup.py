@@ -1,7 +1,7 @@
 import sys
 from setuptools import setup, Extension
 
-version = "1.4.1" 
+version = "1.5.0" 
 
 module_source = 'rtmidi2.pyx'
 
@@ -41,7 +41,7 @@ if sys.platform == 'win32':
 
 setup(
     name='rtmidi2',
-    python_requires='>=3.8',
+    python_requires='>=3.10',
     version=version,
     ext_modules=[
         Extension(

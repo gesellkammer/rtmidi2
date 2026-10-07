@@ -17,7 +17,7 @@ Installation
     pip install rtmidi2
 
     
-This module is compatible with Python 3 >= 3.9 
+This module is compatible with Python 3 >= 3.10
 
 Documentation
 -------------
@@ -70,7 +70,7 @@ Get incoming messages - blocking interface
     while True:
         message = midi_in.get_message()
         if message:
-            print(message, delta_time)
+            print(message, midi_in.deltatime)
         else:
             time.sleep(0.01)
 
@@ -130,6 +130,21 @@ Send multiple notes at once
 
 ----
 
+Validation and error handling
+-----------------------------
+
+The ``send_*`` methods validate their arguments and raise ``ValueError`` or
+``TypeError`` on out-of-range values (channel 0-15, data bytes 0-127,
+pitchbend 0-16383, sysex data 0-127) instead of silently truncating or
+ignoring them. ``send_messages(messagetype, messages)`` combines
+``messagetype | channel`` for each ``(channel, value1, value2)`` triple.
+``send_noteon_many`` / ``send_noteoff_many`` accept lists, tuples or ranges.
+``MidiIn.get_message()`` returns a list of ints or ``None`` when the queue
+is empty (use ``midi_in.deltatime`` for the timestamp); ``MidiOut.send_message``
+accepts a list/tuple of ints.
+
+
+----
 
 License
 -------
